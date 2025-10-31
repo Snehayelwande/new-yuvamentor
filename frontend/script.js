@@ -2,6 +2,8 @@
 // Basic dialog helpers + small demo helpers for your portal
 
 // Open a <dialog> by id (works with native dialog or a simple fallback)
+import { BASE_URL } from './config.js';
+
 function openModal(id) {
   const dlg = document.getElementById(id);
   if (!dlg) return console.warn('Dialog not found:', id);
@@ -79,14 +81,44 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
 
   forms.forEach(({ id, onSuccess }) => {
-    const f = document.getElementById(id);
-    if (!f) return;
-    f.addEventListener('submit', (ev) => {
-      ev.preventDefault();
-      // here you would normally validate and send the data to your backend
-      onSuccess();
-    });
+  const f = document.getElementById(id);
+  if (!f) return;
+  f.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+
+    // Handle LOGIN form separately
+    if (id === 'loginForm') {
+      const email = f.querySelector('input[name="email"]').value;
+      const password = f.querySelector('input[name="password"]').value;
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          closeModal('loginModal');
+          mockNotify('✅ Logged in successfully!');
+          console.log('User:', data);
+          // optional: save token or redirect user
+        } else {
+          mockNotify('❌ ' + (data.message || 'Invalid credentials'));
+        }
+      } catch (err) {
+        console.error(err);
+        mockNotify('⚠️ Error connecting to backend');
+      }
+      return;
+    }
+
+    // For other forms, just show mock success
+    onSuccess();
   });
+});
+
 
   // example stats increment (demo only)
   setTimeout(() => {
